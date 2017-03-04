@@ -3,6 +3,7 @@ import random
 class Othello:
     def __init__(self):
         self.board = self.getNewBoard()
+        self.resetBoard()
 
     def drawBoard(self, board):
         # This function prints out the board that it was passed. Returns None.
@@ -189,8 +190,8 @@ class Othello:
                 return 'hints'
 
             if len(move) == 2 and move[0] in DIGITS1TO8 and move[1] in DIGITS1TO8:
-                x = int(move[0]) - 1
-                y = int(move[1]) - 1
+                y = int(move[0]) - 1
+                x = int(move[1]) - 1
                 if self.isValidMove(board, playerTile, x, y) == False:
                     continue
                 else:
@@ -215,7 +216,6 @@ class Othello:
             if self.isOnCorner(x, y):
                 return [x, y]
 
-        # Go through all the possible moves and remember the best scoring move
         bestScore = -1
         for x, y in possibleMoves:
             dupeBoard = self.getBoardCopy(board)
@@ -230,4 +230,4 @@ class Othello:
     def showPoints(self, playerTile, computerTile):
         # Prints out the current score.
         scores = self.getScoreOfBoard(self.board)
-        print('You have %s points. The computer has %s points.' % (scores[playerTile], scores[computerTile]))
+        print('Player1 have %s points. Player2 has %s points.' % (scores[playerTile], scores[computerTile]))
