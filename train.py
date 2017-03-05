@@ -1,131 +1,97 @@
 
 
 from learningAgents import LearningAgent
-import sys
 from othello import Othello
 from agents import MinimaxAgent, GreedyAgent, AlphaBetaAgent
-import numpy as np
-import time
-import tensorflow as tf
-
-
+import matplotlib.pyplot as plt
 
 class Environment:
-    def __init__(self, rival, game, tile = 'O', render = False):
+    def __init__(self, game):
         self.game = game
-        self.tile = tile
-        self.rival = rival
-        self.render = render
+        self.done = False
+        self.skip = False
 
-    def getState(self, board):
+    def getState(self, board, tile):
         myMap = [0] * 64
         rivalMap = [0] * 64
         validMoves = [0] * 64
         for x in range(8):
             for y in range(8):
                 pos = x * 8 + y
-                if board[x][y] == self.tile:
+                if board[x][y] == tile:
                     myMap[pos] = 1
                 elif board[x][y] == 'O' or board[x][y] == 'X':
                     rivalMap[pos] = 1
-        possibleMoves = self.game.getValidMoves(board, self.tile)
+        possibleMoves = self.game.getValidMoves(board, tile)
         for x, y in possibleMoves:
             pos = x * 8 + y
             validMoves[pos] = 1
 
         return myMap + rivalMap + validMoves
 
-
-    def step(self, action):
-        done = False
+    def step(self, action, tile):
+        self.skip = False
         game = self.game
-        tile1 = 'O'
-        tile2 = 'X'
+        tile2 = 'X' if tile=='O' else 'O'
 
-        score = game.getScoreOfBoard(game.board)[self.tile]
-
-        if self.render:
-            game.drawBoard(game.board)
-            game.showPoints(tile1, tile2)
-
-        game.makeMove(game.board, tile1, action[0], action[1])
+        game.makeMove(game.board, tile, action[0], action[1])
         if game.getValidMoves(game.board, tile2) == []:
-            done = True
-
-        if done == False:
-            x, y = self.rival.getMove()
-            game.makeMove(game.board, tile2, x, y)
             if game.getValidMoves(game.board, tile1) == []:
-                done = True
+                self.done = True
+            else:
+                self.skip = True
 
-        reward = game.getScoreOfBoard(game.board)[self.tile] - score
-        reward /= 64
-        return self.getState(game.board), reward, done
+        return self.getState(game.board, tile)
 
     def reset(self):
         self.game.resetBoard()
+        self.done = False
 
-
-
-
-# hyperparameters
-H = 10  # number of hidden layer neurons
-batch_size = 5  # every how many episodes to do a param update?
-learning_rate = 1e-2  # feel free to play with this to train faster or more stably.
-gamma = 0.99  # discount factor for reward
-
-D = 64*3  # input dimensionality
-
-tf.reset_default_graph()
-
-x = tf.placeholder(tf.float32, shape=[None, D])
-y_ = tf.placeholder(tf.float32, shape=[None, 1])
-
-W1 = tf.get_variable("W1", shape=[D, H],
-           initializer=tf.contrib.layers.xavier_initializer())
-h_layer1 = tf.nn.relu(tf.matmul(x,W1))
-
-W2 = tf.get_variable("W2", shape=[H, 1],
-           initializer=tf.contrib.layers.xavier_initializer())
-
-y = tf.nn.sigmoid(tf.matmul(h_layer1, W2))
-
-mse = tf.sqrt(tf.reduce_mean(tf.square(y_ - y)))
-
-train_step = tf.train.GradientDescentOptimizer(0.5).minimize(mse)
-
-
-sess = tf.InteractiveSession()
-sess.run(tf.global_variables_initializer())
 
 game = Othello()
-myTile = 'O'
-rivalTile = 'X'
-rival = AlphaBetaAgent(rivalTile, game, 4)
-env = Environment(rival, game, tile=myTile, render=False)
+tile1 = 'O'
+tile2 = 'X'
+env = Environment(game)
+agent1 = LearningAgent(tile1, game, env)
+agent2 = AlphaBetaAgent(tile2, game, 4)
+maxEpoch = 200
+epoch = 0
+performance = []
+while epoch < maxEpoch:
+    epoch += 1
+    env.reset()
+    while not env.done:
+        if env.skip == False:
+            x1, y1 = agent1.train_step()
+            if not env.done:
+                env.step([x1, y1], tile1)
+            else:
+                break
+        else:
+            env.skip = False
 
-action = [0,0]
-observation, reward, done = env.step(action)
+        if env.skip == False:
+            x2, y2 = agent2.getMove()
+            if not env.done:
+                env.step([x2, y2], tile2)
+            if env.done:
+                agent1.train_step()
+        else:
+            env.skip = False
 
-state = env.getState(game.board)
+    game.drawBoard(game.board)
+    scores = game.getScoreOfBoard(game.board)
+    print('Epoch #', epoch)
+    print('Score:', scores[tile1]-scores[tile2])
+    performance.append(scores[tile1] - scores[tile2])
+    corners = game.cornersHeld(game.board)
+    print('Corners held:', corners[tile1])
 
-print(state)
-#TODO: make tensorflow run
-# score = sess.run(y, feed_dict={x: state})
-
-
-    #(reward + gamma * q(new_state)) - q(prev_state) => error
-
-
-
-
-
-
-
-
-
-
-
+print('Win rate:', [x for x in performance if x>0])
+print('Lose rate:', [x for x in performance if x<0])
+print('Corners held:', corners)
+plt.plot(performance, 'o')
+plt.show()
 
 
 

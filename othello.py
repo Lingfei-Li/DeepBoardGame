@@ -104,6 +104,10 @@ class Othello:
                     validMoves.append([x, y])
         return validMoves
 
+    def getCopyOfBoardAfterMove(self, board, tile, x, y):
+        dupeBoard = self.getBoardCopy(board)
+        self.makeMove(dupeBoard, tile, x, y)
+        return dupeBoard
 
     def getScoreOfBoard(self, board):
         # Determine the score by counting the tiles. Returns a dictionary with keys 'X' and 'O'.
@@ -140,6 +144,15 @@ class Othello:
         else:
             return 'player'
 
+    def cornersHeld(self, board):
+        corners = {'O': 0, 'X': 0}
+        for x in [0, 7]:
+            for y in [0, 7]:
+                if board[x][y] == 'O':
+                    corners['O'] += 1
+                elif board[x][y] == 'X':
+                    corners['X'] += 1
+        return corners
 
     def playAgain(self):
         # This function returns True if the player wants to play again, otherwise it returns False.
