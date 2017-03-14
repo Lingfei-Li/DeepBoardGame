@@ -3,6 +3,7 @@
 from learningAgents import LearningAgent
 from othello import Othello
 from agents import MinimaxAgent, GreedyAgent, AlphaBetaAgent
+import numpy as np
 import matplotlib.pyplot as plt
 
 class Environment:
@@ -54,9 +55,12 @@ tile2 = 'X'
 env = Environment(game)
 agent1 = LearningAgent(tile1, game, env)
 agent2 = AlphaBetaAgent(tile2, game, 4)
-maxEpoch = 200
+maxEpoch = 500
 epoch = 0
 performance = []
+corners = []
+meanwinrate = []
+meanscore = []
 while epoch < maxEpoch:
     epoch += 1
     env.reset()
@@ -84,13 +88,18 @@ while epoch < maxEpoch:
     print('Epoch #', epoch)
     print('Score:', scores[tile1]-scores[tile2])
     performance.append(scores[tile1] - scores[tile2])
-    corners = game.cornersHeld(game.board)
-    print('Corners held:', corners[tile1])
+    meanscore.append(np.mean(performance))
+    corners.append(game.cornersHeld(game.board)[tile1])
+    print('Mean score:', np.mean(performance))
+    print('Mean corner:', np.mean(corners))
+    meanwinrate.append( len([x for x in performance if x>0])/len(performance) )
+    print('Win rate:', len([x for x in performance if x>0])/len(performance))
 
-print('Win rate:', [x for x in performance if x>0])
-print('Lose rate:', [x for x in performance if x<0])
-print('Corners held:', corners)
-plt.plot(performance, 'o')
+print('Win rate:', len([x for x in performance if x>0])/len(performance))
+plt.plot(meanscore, 'o')
+plt.plot(performance, 'x')
+# plt.plot(corners, 'x')
+# plt.plot(meanwinrate, '-')
 plt.show()
 
 
